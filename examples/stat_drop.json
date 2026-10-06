@@ -6,7 +6,7 @@
   "palette": "sunset-gold",
   "seed": 33901,
   "voice": {
-    "name": "en-US-AndrewNeural",
+    "name": "en-US-EricNeural",
     "rate": "+6%",
     "pitch": "+0Hz"
   },
@@ -19,6 +19,7 @@
       "kind": "intro",
       "hook_pattern": "number-shock",
       "hook": "A 0.1s delay cuts sales by 7%",
+      "image": "images/analytics_dashboard.jpg",
       "voice": "A mere one-tenth of a second delay in load time slashes your sales conversion by seven percent.",
       "motion": "punch-zoom",
       "sfx": "whoosh"
@@ -27,6 +28,7 @@
       "kind": "stat",
       "value": "53%",
       "label": "of mobile visitors leave after 3s",
+      "image": "images/mobile_phone.jpg",
       "voice": "Over half of all mobile visitors will abandon your page completely if it takes more than three seconds to load.",
       "motion": "push-in"
     },
@@ -34,12 +36,14 @@
       "kind": "card",
       "layout": "numbered-stack",
       "caption": "How to Fix Latency|Compress hero images to WebP|Defer non-critical scripts|Enable edge CDN caching",
+      "image": "images/analytics_dashboard.jpg",
       "voice": "Compress your hero images, defer third-party scripts, and cache assets on an edge content delivery network.",
-      "motion": "tilt-up"
+      "motion": "handheld-left"
     },
     {
       "kind": "outro",
       "hook": "Speed isn't a feature; it's the foundation",
+      "image": "images/analytics_dashboard.jpg",
       "voice": "Page speed isn't a feature—it is the foundation of user retention.",
       "ending": "loop"
     }

@@ -6,7 +6,7 @@
   "palette": "ember",
   "seed": 61204,
   "voice": {
-    "name": "en-US-AndrewNeural",
+    "name": "en-US-GuyNeural",
     "rate": "+5%",
     "pitch": "+0Hz"
   },
@@ -19,6 +19,7 @@
       "kind": "intro",
       "hook_pattern": "mistake-callout",
       "hook": "You're over-engineering clean code",
+      "image": "images/code_review.jpg",
       "voice": "Most developers treat clean code rules like dogma, and it quietly destroys their shipping speed.",
       "motion": "pan-left",
       "sfx": "whoosh"
@@ -29,18 +30,21 @@
       "before": "Every class needs an interface and five layers of abstraction",
       "label_right": "Practical Reality",
       "after": "Write simple direct functions until you actually need two implementations",
+      "image": "images/code_review.jpg",
       "voice": "You don't need interfaces and five abstraction layers for single-use internal logic.",
       "motion": "punch-zoom"
     },
     {
       "kind": "card",
       "caption": "The Rule of 3|Duplicate once before abstracting|Refactor when patterns emerge",
+      "image": "images/whiteboard.jpg",
       "voice": "Follow the rule of three: write straightforward code first, and extract abstractions only when patterns repeat.",
-      "motion": "pan-right"
+      "motion": "handheld-drift"
     },
     {
       "kind": "outro",
       "hook": "Readability beats cleverness every single time",
+      "image": "images/code_review.jpg",
       "voice": "Remember: readability beats clever abstractions every single time.",
       "ending": "loop"
     }

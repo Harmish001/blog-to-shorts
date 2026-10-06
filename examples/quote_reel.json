@@ -6,7 +6,7 @@
   "palette": "forest-emerald",
   "seed": 51920,
   "voice": {
-    "name": "en-US-AndrewNeural",
+    "name": "en-US-ChristopherNeural",
     "rate": "+0%",
     "pitch": "+0Hz"
   },
@@ -19,6 +19,7 @@
       "kind": "intro",
       "hook_pattern": "bold-claim",
       "hook": "Why Unix software outlived everything",
+      "image": "images/terminal_screen.jpg",
       "voice": "The software architecture written fifty years ago still powers almost the entire modern internet.",
       "motion": "diagonal-drift",
       "sfx": "whoosh"
@@ -27,18 +28,21 @@
       "kind": "quote",
       "quote": "Write programs that do one thing and do it well. Write programs to work together.",
       "author": "Doug McIlroy",
+      "image": "images/terminal_screen.jpg",
       "voice": "Doug McIlroy defined the principle: write programs that do one thing well, and connect them with clean text streams.",
       "motion": "push-in"
     },
     {
       "kind": "card",
       "caption": "Unix Tenets|Small is beautiful|Store data in plain text|Compose with pipes",
+      "image": "images/terminal_screen.jpg",
       "voice": "Build small components, output plain text streams, and compose complex workflows with pipes.",
-      "motion": "pull-out"
+      "motion": "handheld-drift"
     },
     {
       "kind": "outro",
       "hook": "Simplicity is the prerequisite for reliability",
+      "image": "images/terminal_screen.jpg",
       "voice": "True simplicity is the greatest prerequisite for long-term software reliability.",
       "ending": "loop"
     }

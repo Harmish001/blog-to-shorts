@@ -6,7 +6,7 @@
   "palette": "ocean-slate",
   "seed": 77123,
   "voice": {
-    "name": "en-US-AndrewNeural",
+    "name": "en-US-JennyNeural",
     "rate": "+4%",
     "pitch": "+0Hz"
   },
@@ -19,6 +19,7 @@
       "kind": "intro",
       "hook_pattern": "question-gap",
       "hook": "Do you know what's inside a JWT?",
+      "image": "images/jwt_diagram.jpg",
       "voice": "Most developers use JSON web tokens every day without knowing how they work under the hood.",
       "motion": "push-in",
       "sfx": "whoosh"
@@ -27,18 +28,21 @@
       "kind": "code",
       "language": "JSON",
       "code": "{\n  \"alg\": \"HS256\",\n  \"typ\": \"JWT\"\n}\n{\n  \"userId\": \"usr_492\",\n  \"role\": \"admin\"\n}",
+      "image": "images/jwt_diagram.jpg",
       "voice": "A token is just three Base-64 parts separated by dots: header, payload, and cryptographic signature.",
       "motion": "tilt-down"
     },
     {
       "kind": "card",
       "caption": "Stateless Auth|Server verifies signature with secret|No database lookup required",
+      "image": "images/server_auth.jpg",
       "voice": "Because the signature guarantees integrity, your backend validates users instantly without database lookups.",
       "motion": "pan-left"
     },
     {
       "kind": "outro",
       "hook": "Never store secrets in your payload",
+      "image": "images/jwt_diagram.jpg",
       "voice": "Remember: anyone can decode the payload, so never store sensitive secrets inside it.",
       "ending": "loop"
     }

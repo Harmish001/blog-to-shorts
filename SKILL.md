@@ -3,15 +3,16 @@ name: blog-to-shorts
 description: >-
   Turn one blog URL into one polished, YouTube-ready 9:16 Short (30-45s for short posts,
   60-75s for guides) with archetype-driven styling, high-retention hook formulas, neural
-  voiceover starting at 0.0s, word-level captions in YouTube safe zones, anti-jitter motion,
-  dynamic visual cards (stats, split screens, code, quotes), subtle audio ducking, loop
-  endings, and metadata generation.
+  voiceover starting at 0.0s, word-level captions in YouTube safe zones, cinema-grade
+  camera motions, glass-morphism text overlays always over a real background photo,
+  animated sequential bullet reveals, dynamic voice selection, ambient audio ducking,
+  loop endings, and metadata generation.
 disable-model-invocation: true
 ---
 
-# Blog to Shorts
+# Blog to Shorts — Cinema Engine
 
-Turn one blog or article URL into an engaging, YouTube-ready 9:16 vertical Short that holds viewer retention and does not look like an auto-generated slideshow.
+Turn one blog or article URL into an engaging, YouTube-ready 9:16 vertical Short that holds viewer retention and does **not** look like an auto-generated AI slideshow.
 
 ## Core Rules
 
@@ -67,34 +68,69 @@ Select the archetype that fits the article type. Archetypes automatically determ
 
 ---
 
-## 3. Beat Kinds & Motion Library
+## 3. Dynamic Voice Selection (Edge-TTS Models)
 
-To keep videos visually dynamic and prevent the "AI slideshow" look, **no more than 50% of beats should be photo stills**. Alternate with high-impact visual cards:
+The agent dynamically selects the voiceover model based on the article's topic, tone, and archetype. Only valid voices from the official Edge-TTS catalog are supported (see `scripts/voices.py`).
 
-### Available Beat Kinds:
-1. `intro`: Hook text banner + moving background/card. Spoken narration starts at 0.0s.
-2. `scene`: Photo from article or AI generated 9:16 still with camera motion.
-3. `card`: Clean UI card with title and body lines (e.g. `layout: "numbered-stack"`). Split lines with `|`.
-4. `stat`: Big-number callout (`value: "10x"`, `label: "faster page loads"`).
-5. `split`: Before vs After / Myth vs Fact two-panel comparison (`before: "..."`, `after: "..."`).
-6. `code`: Code snippet window with syntax-styled lines (`language: "python"`, `code: "..."`).
-7. `quote`: Large quotation statement with author attribution (`quote: "..."`, `author: "..."`).
-8. `outro`: Resolution beat. Supports seamless `ending: "loop"` or `ending: "fade"`.
+| Topic / Tone Category | Recommended Voice | Gender | Voice Personality | Best Fit For |
+| :--- | :--- | :--- | :--- | :--- |
+| **Tech Architecture / Deep Dives / Outages** | `en-US-ChristopherNeural` | Male | Reliable, Authority | Backend post-mortems, systems, databases, cloud architecture |
+| **AI Breakthroughs / Bold Tech / Startups** | `en-US-GuyNeural` | Male | Passion, High Energy | Exciting releases, AI benchmarks, startup launches, speed tips |
+| **Tutorials / How-To / Guides / SaaS** | `en-US-JennyNeural` | Female | Friendly, Considerate | Developer onboarding, how-tos, step-by-step explainer stacks |
+| **Data / Metrics / Benchmarks / Clean Code** | `en-US-EricNeural` | Male | Rational, Analytical | Stats drops, refactoring, algorithms, math, benchmarks |
+| **Listicles / Tips / Quick Hacks** | `en-US-RogerNeural` | Male | Lively, Engaging | Fast-paced listicles, top 5 tools, productivity shortcuts |
+| **Product Announcements / News** | `en-US-AriaNeural` | Female | Positive, Confident | Official feature updates, product reveals, overview shorts |
+| **Global / British English** | `en-GB-RyanNeural` / `en-GB-SoniaNeural` | Male/Female | Friendly, Professional | International engineering and design topics |
+| **India Developer Community** | `en-IN-PrabhatNeural` / `en-IN-NeerjaNeural` | Male/Female | Friendly, Positive | India-focused tech ecosystem content |
 
-### Motion Types (Never repeat the same motion back-to-back):
-- `push-in`: Smooth gradual zoom-in (1.0 -> 1.15)
-- `pull-out`: Smooth zoom-out (1.15 -> 1.0)
-- `pan-left` / `pan-right`: Smooth horizontal window tracking
-- `tilt-up` / `tilt-down`: Smooth vertical window tracking
-- `diagonal-drift`: Combined diagonal pan and subtle scale
-- `punch-zoom`: Rapid 0.35s snap zoom for emphasis
-- `static-with-overlay`: Subtle ambient float
+*Rule:* You can set `"name": "auto"` or an explicit voice in `beats.json`. If an unsupported voice name is provided, the renderer automatically normalizes to the closest supported match.
 
 ---
 
-## 4. Extended `beats.json` Schema
+## 4. Beat Kinds, Motion Library & Cinema Rules
 
-Save the beat plan to `shorts/<slug>/beats.json`:
+> **Cinema Rule**: Every single beat MUST have an `"image"` field pointing to a real background photo. The renderer places all text overlays (points, stat, split, code, quote, outro) directly over the photo using clean Inter typography and dark gradient backdrops — **NO ugly rectangular card boxes or outlined containers**. If a beat omits its `image` key, the renderer automatically pools images from other beats as a fallback.
+
+### Available Beat Kinds
+
+1. **`intro`**: Hook text fades in over a background photo with a gradient darkening strip at the top. Text is wrapped to max 22 characters per line to eliminate edge clipping.
+2. **`scene`**: Full-bleed background photo with camera motion only. Voice narrates over it.
+3. **`card`**: Clean text points composited directly over the background photo (NO card box container). Title + bullet lines with **sequential animated reveal** (each line appears one by one with timed delay). Split caption fields with `|`.
+4. **`stat`**: Big-number callout (`value: "200+"`, `label: "people under observation"`) rendered directly over the background photo. Value renders in the palette highlight color with drop shadow.
+5. **`split`**: Before vs After / Myth vs Fact comparison rendered directly over the background photo. Compact pill tags for category labels (`✕ INITIAL REPORT` / `✓ REALITY`) with body text underneath.
+6. **`code`**: Terminal window overlay with macOS-style window dots composited over the background photo. Up to 12 lines of monospace code.
+7. **`quote`**: Typographic quote with large opening `"` mark and author attribution, composited over background photo.
+8. **`outro`**: Cinematic final beat — **NO card box**. Hook text rendered large and centered over background photo with vignette. Accent separator line below.
+
+### Motion Library (Never repeat back-to-back)
+
+| Motion | Effect | When to Use |
+| :--- | :--- | :--- |
+| `push-in` | Smooth ease-in zoom 1.0→1.18 | Opening emphasis, stat reveals |
+| `pull-out` | Smooth ease-out zoom 1.18→1.0 | Resolution, outro pulls |
+| `pan-left` | Horizontal track across frame | Mid-story scene changes |
+| `pan-right` | Horizontal track opposite | Alternating scene beats |
+| `tilt-up` | Vertical track upward | Reveal / ascent moments |
+| `tilt-down` | Vertical track downward | Code reveals, descent |
+| `diagonal-drift` | Combined diagonal pan + scale | Quote reels, cinematic scenes |
+| `punch-zoom` | Rapid 14-frame snap zoom in | Hook punch, big stat reveals |
+| `handheld-left` | Slow rightward drift + vertical sine wobble | Authentic handheld feel |
+| `handheld-right` | Slow leftward drift + vertical sine wobble | Varied handheld continuity |
+| `handheld-drift` | Organic 2D float with no clear direction | Story narration, subtle presence |
+
+### Transition Types
+
+Transitions between segments are automatically set per archetype:
+- `listicle-punch`, `myth-vs-fact`: `slideleft`
+- `story-arc`, `quote-reel`: `fade`
+- `explainer-stack`: `wipeleft`
+- `stat-drop`: `zoomin`
+
+---
+
+## 5. Beat JSON Schema — Complete Reference
+
+> **Image Rule**: The `image` field is **required** on every beat. Use a relative path from the `beats.json` directory. The renderer resolves all image paths relative to the directory containing `beats.json`.
 
 ```json
 {
@@ -119,6 +155,7 @@ Save the beat plan to `shorts/<slug>/beats.json`:
       "kind": "intro",
       "hook_pattern": "number-shock",
       "hook": "80% of bugs come from 2 mistakes",
+      "image": "images/code_bug.jpg",
       "voice": "Eighty percent of software bugs come from just two common mistakes.",
       "motion": "punch-zoom",
       "sfx": "whoosh"
@@ -127,6 +164,7 @@ Save the beat plan to `shorts/<slug>/beats.json`:
       "kind": "stat",
       "value": "80%",
       "label": "preventable software bugs",
+      "image": "images/code_bug.jpg",
       "voice": "Most developers overlook state mutation and unhandled edge cases.",
       "motion": "push-in"
     },
@@ -136,6 +174,7 @@ Save the beat plan to `shorts/<slug>/beats.json`:
       "before": "Mutating shared global state across functions",
       "label_right": "Clean Fix",
       "after": "Return immutable copies or pure function results",
+      "image": "images/refactor.jpg",
       "voice": "Stop mutating shared global state. Always return pure, immutable values.",
       "motion": "pan-left"
     },
@@ -143,12 +182,14 @@ Save the beat plan to `shorts/<slug>/beats.json`:
       "kind": "card",
       "layout": "numbered-stack",
       "caption": "Action Items|Enforce immutability|Validate input boundaries",
+      "image": "images/code_bug.jpg",
       "voice": "Enforce immutability in your models, and validate all input boundaries.",
-      "motion": "pan-right"
+      "motion": "handheld-drift"
     },
     {
       "kind": "outro",
       "hook": "Write code that cannot lie",
+      "image": "images/code_bug.jpg",
       "voice": "Write code that cannot lie.",
       "ending": "loop"
     }
@@ -156,16 +197,40 @@ Save the beat plan to `shorts/<slug>/beats.json`:
 }
 ```
 
+### Beat Field Reference
+
+| Field | Required | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `kind` | ✅ | string | Beat type: `intro`, `scene`, `card`, `stat`, `split`, `code`, `quote`, `outro` |
+| `image` | ✅ | string | **Relative path to background photo.** Used as a persistent background for the entire beat. |
+| `voice` | ✅ | string | Spoken narration text. Full sentences, no bullet labels. |
+| `motion` | ✅ | string | Camera motion type (see motion library above). Never repeat back-to-back. |
+| `hook` | Intro/Outro | string | Displayed hook text (≤ 12 words for intro). |
+| `caption` | Card | string | Card title + body lines split by `\|`. First segment = title. |
+| `layout` | Card | string | `"numbered-stack"` for numbered items (default: bullet `▸`). |
+| `value` | Stat | string | Large stat value e.g. `"53%"`, `"10x"`, `"$4B"`. |
+| `label` | Stat | string | Stat explanation label text. |
+| `before` / `after` | Split | string | Left (red) and right (green) panel content. |
+| `label_left` / `label_right` | Split | string | Panel header labels e.g. `"MYTH"` / `"FACT"`. |
+| `code` | Code | string | Code snippet text (newlines as `\n`). Up to 12 lines. |
+| `language` | Code | string | Language badge shown in terminal chrome e.g. `"Python"`. |
+| `quote` | Quote | string | Full quotation text. |
+| `author` | Quote | string | Attribution name shown after `—`. |
+| `sfx` | Optional | string | Sound effect: `"whoosh"`, `"tick"`, `"chime"`, `"ding"`. |
+| `ending` | Outro | string | `"loop"` (tight cut for looping) or `"fade"`. |
+| `hook_pattern` | Intro | string | Hook formula name for QA tracking. |
+
 ---
 
-## 5. Workflow Steps
+## 6. Workflow Steps
 
 ```
 Task Progress:
 - [ ] Check shorts/.history.json for last archetype and hook
 - [ ] Fetch the blog URL and extract core takeaways
 - [ ] Pick fresh Archetype, Hook Formula, and Palette
-- [ ] Write shorts/<slug>/beats.json with varied beat kinds
+- [ ] Source or generate background images for each beat
+- [ ] Write shorts/<slug>/beats.json with varied beat kinds and image fields
 - [ ] Render video and generate shorts/<slug>/meta.md
 - [ ] Verify QA checklist before replying
 ```
@@ -182,33 +247,44 @@ Assemble 4–7 beats. Ensure:
 - Hook voice is <= 12 words.
 - At least 3 different beat kinds are used.
 - Motions vary across adjacent beats.
+- **Every beat has an `image` field** pointing to a real photo.
 
-### Step 4: Render Video
-Run the render script from the skill directory:
+### Step 4: Source Background Images
+Before rendering, ensure every beat's image path resolves:
+- Use the `generate_image` tool to create cinematic 9:16 background photos if none are available.
+- Store generated images in `shorts/<slug>/images/`.
+- Use descriptive, relevant images — not generic stock photos.
+
+### Step 5: Render Video
 
 ```bash
 python <skill-path>/scripts/render_short.py shorts/<slug>/beats.json -o shorts/<slug>/short.mp4
 ```
 
-The renderer automatically:
+The cinema renderer automatically:
 1. Synthesizes voiceover with WordBoundary timestamps via `edge-tts`.
-2. Generates crisp, high-DPI Pillow visual cards for `stat`, `card`, `split`, `code`, `quote`.
-3. Scales stills to 1620x2880 to guarantee zero-jitter smooth motion.
-4. Places word-pop subtitles safely in the YouTube Safe Zone (`y=1340px`).
-5. Ducks ambient backing audio by -14dB and normalizes audio to -14 LUFS standard.
-6. Exports `shorts/<slug>/meta.md` with YouTube title, description, tags, and cover frame timestamp.
-7. Logs execution into `shorts/.history.json`.
+2. Prepares background photo for every beat (scale, crop, optional blur for readability).
+3. Composites glass-morphism overlays (card/stat/split/code/quote/outro) as RGBA PNGs on top of the photo.
+4. Applies organic camera motion (push-in, handheld-drift, punch-zoom, etc.) with cubic easing.
+5. Adds cinematic vignette filter to every segment.
+6. Renders sequential bullet reveals for `card` beats via timed FFmpeg `drawtext` filters.
+7. Places word-pop captions in the YouTube Safe Zone (`y≈1320px`).
+8. Chains segments with xfade transitions (slideleft, fade, wipeleft, zoomin).
+9. Mixes ambient backing audio ducked under voice and normalizes to -14 LUFS.
+10. Exports `shorts/<slug>/meta.md` with YouTube title, description, tags, and cover frame timestamp.
+11. Logs execution into `shorts/.history.json`.
 
 ---
 
-## 6. Pre-Flight QA Checklist
+## 7. Pre-Flight QA Checklist
 
 Before reporting completion to the user, verify:
 - [x] Voice starts at 0.0s on the very first frame.
 - [x] Spoken hook is <= 12 words and uses a recognized hook formula.
 - [x] No motion type repeated consecutively.
+- [x] **Every beat has an `image` field** with a valid file path.
 - [x] Captions and cards are placed inside the YouTube Safe Zone (no bottom UI clipping).
-- [x] No single image reused across multiple scenes.
+- [x] Outro renders as hook text over photo — NOT as a card box.
 - [x] Archetype differs from the previous entry in `shorts/.history.json`.
 - [x] Final video duration is within the cap (<=60s for short, <=90s for long).
 - [x] `shorts/<slug>/meta.md` is generated and formatted.

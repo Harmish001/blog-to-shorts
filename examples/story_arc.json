@@ -6,7 +6,7 @@
   "palette": "clean-dark",
   "seed": 91283,
   "voice": {
-    "name": "en-US-AndrewNeural",
+    "name": "en-US-ChristopherNeural",
     "rate": "+2%",
     "pitch": "+0Hz"
   },
@@ -20,6 +20,7 @@
       "kind": "intro",
       "hook_pattern": "mid-story-drop",
       "hook": "At 3 AM, all our databases crashed",
+      "image": "images/server_room.jpg",
       "voice": "At three in the morning, every single primary database dropped offline at once.",
       "motion": "push-in",
       "sfx": "whoosh"
@@ -27,6 +28,7 @@
     {
       "kind": "card",
       "caption": "The Investigation|Traffic was normal|CPU at 100%|Connection pool drained",
+      "image": "images/server_room.jpg",
       "voice": "Traffic was completely normal, yet CPU usage was pegged at one hundred percent with zero available connections.",
       "motion": "pull-out"
     },
@@ -36,12 +38,14 @@
       "before": "Massive DDoS attack hitting authentication",
       "label_right": "Actual Root Cause",
       "after": "Missing index on a background health check query",
+      "image": "images/database_diagram.jpg",
       "voice": "The team assumed a cyber attack, but the actual cause was a single unindexed query running every ten seconds.",
       "motion": "pan-left"
     },
     {
       "kind": "outro",
       "hook": "Index the queries you run the most",
+      "image": "images/server_room.jpg",
       "voice": "Always index the queries you run the most, before they take you down.",
       "ending": "loop"
     }

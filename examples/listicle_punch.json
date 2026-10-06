@@ -6,7 +6,7 @@
   "palette": "neon-cyber",
   "seed": 48213,
   "voice": {
-    "name": "en-US-AndrewNeural",
+    "name": "en-US-RogerNeural",
     "rate": "+5%",
     "pitch": "+0Hz"
   },
@@ -20,6 +20,7 @@
       "kind": "intro",
       "hook_pattern": "bold-claim",
       "hook": "Your Python is slow for 1 reason",
+      "image": "images/python_code.jpg",
       "voice": "Your Python code isn't slow because of the language. It's slow because of how you loop.",
       "motion": "punch-zoom",
       "caption_style": "word-pop",
@@ -29,6 +30,7 @@
       "kind": "stat",
       "value": "12.4x",
       "label": "speedup with list comprehensions",
+      "image": "images/performance_chart.jpg",
       "voice": "Replacing manual appends with list comprehensions gives an instant twelve times speedup.",
       "motion": "push-in"
     },
@@ -36,12 +38,14 @@
       "kind": "card",
       "layout": "numbered-stack",
       "caption": "Three Quick Fixes|Use built-in functions|Vectorize with Numpy|Avoid global lookups",
+      "image": "images/python_code.jpg",
       "voice": "Use built-in functions, vectorize your math with NumPy, and avoid global lookups inside tight loops.",
-      "motion": "pan-right"
+      "motion": "handheld-drift"
     },
     {
       "kind": "outro",
       "hook": "Optimize algorithms before language switches",
+      "image": "images/python_code.jpg",
       "voice": "Always optimize your algorithm before blaming the language.",
       "ending": "loop"
     }
