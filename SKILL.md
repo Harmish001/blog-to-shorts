@@ -1,138 +1,214 @@
 ---
 name: blog-to-shorts
 description: >-
-  Turn one blog URL into one 9:16 YouTube Short told as a short story, with a
-  neural voice, captions locked to that voice, slow moves on photos, and a
-  catchy intro and a fade-out ending written for that post. Generate frames
-  when the blog has too few photos. About 1 minute for a short post, about 2
-  minutes for a long guide. Use when the user invokes /blog-to-shorts or asks
-  to turn a blog URL into a YouTube Short.
+  Turn one blog URL into one polished, YouTube-ready 9:16 Short (30-45s for short posts,
+  60-75s for guides) with archetype-driven styling, high-retention hook formulas, neural
+  voiceover starting at 0.0s, word-level captions in YouTube safe zones, anti-jitter motion,
+  dynamic visual cards (stats, split screens, code, quotes), subtle audio ducking, loop
+  endings, and metadata generation.
 disable-model-invocation: true
 ---
 
 # Blog to Shorts
 
-Make one YouTube Short from one blog URL. The viewer should feel they were walked through the article, not read a list.
+Turn one blog or article URL into an engaging, YouTube-ready 9:16 vertical Short that holds viewer retention and does not look like an auto-generated slideshow.
 
-## Rules
+## Core Rules
 
-- One URL in. One short out. Ask for the URL if it is missing.
-- Tell a story in full sentences. Contractions are fine. Connect ideas with when, so, and if. Do not speak labels, colons, or "point one".
-- Say only what the article says. No extra facts.
-- English only. If the article is not English, stop and ask. Do not translate unless the user asks.
-- Use the article only when the user has rights to it. If the page blocks access, stop.
-- Length:
-  - A short post (one idea, a few sections) aims at about 1 minute. Hard cap 70 seconds.
-  - A long guide (many sections, several cases) aims at about 2 minutes. Hard cap 120 seconds.
-  - Do not pad a short post out to 2 minutes. Do not shrink a guide into a bullet readout to hit 60 seconds.
-- Set `"size": "short"` or `"size": "long"` in `beats.json`. The renderer enforces the cap.
+- **One URL in, one Short package out**: Video (`short.mp4`) + metadata (`meta.md`). Ask for the URL if missing.
+- **Narrative Storytelling**: Tell a story in full sentences. Contractions are welcome. Connect ideas with *when*, *so*, and *if*. Never read out bullet points, colons, or labels like "point one".
+- **Factual Fidelity**: Say only what the article backs up. No hallucinations or invented claims.
+- **English by Default**: If the article is not English, stop and ask the user before translating.
+- **Length & Sizing**:
+  - `size: "short"` (1 core idea / quick takeaway): **Target 30–45 seconds**. Hard cap **60 seconds**.
+  - `size: "long"` (deep dive / tutorial / multi-step case): **Target 60–75 seconds**. Hard cap **90 seconds**.
+  - If a comprehensive guide exceeds 90s, split it into a numbered multi-part series (Part 1, Part 2) instead of compressing it into a rushed readout.
+- **Voice Starts at 0.0s**: The spoken voiceover must start immediately on the very first frame. No title slides, no intro logos, and no "Hey guys / In this video".
+- **Safe Zone Placement**: All critical text and captions are kept in the central 80% safe zone (middle-lower third at ~`y=1340px`), away from YouTube's top search bar, right-side buttons, and bottom channel/title overlay.
+- **Anti-Repetition**: Consult `shorts/.history.json` before writing. Never use the same archetype, hook formula, or palette as the preceding short.
 
-## Steps
+---
 
-```
-Task Progress:
-- [ ] Fetch the URL
-- [ ] Decide short or long
-- [ ] Write the story beats
-- [ ] Render
-- [ ] Confirm it sounds like a story and the length matches the size
-```
+## 1. Hook Formulas (Pick One per Short)
 
-### 1. Fetch
+The first beat is always `kind: "intro"`. Pick one hook formula that best matches the article angle. The spoken hook must be **<= 12 words** and begin at 0.0s.
 
-Use WebFetch. Keep the title and article body. Drop nav, footer, related posts, comments, and newsletter blocks.
+| Hook Formula | Structure | Example |
+| :--- | :--- | :--- |
+| **Bold Claim** | A surprising, contrarian statement proven in the post | *"Your database cache is quietly lying to you."* |
+| **Number Shock** | An eye-opening metric or cost stated first | *"A 0.1 second delay just cost you 7% of your revenue."* |
+| **Mistake Callout** | Highlights what the majority does wrong | *"Most developers write clean code completely wrong."* |
+| **Question Gap** | A compelling question the viewer cannot yet answer | *"Do you know what actually happens inside a JWT token?"* |
+| **Before / After** | Sharp contrast between old struggle and new fix | *"Stop writing 50 lines of boilerplate for one API call."* |
+| **Mid-Story Drop** | Drops right into the most dramatic turning point | *"At 3 AM, every single primary database dropped offline."* |
 
-If the fetch is empty, a cookie wall, or only a JS shell, stop.
+---
 
-### 2. Shape
+## 2. Archetypes & Visual Styling
 
-Open on a catchy line that only this article could start with. Walk through the advice as choices a person makes. End so the picture fades out and the video feels finished.
+Select the archetype that fits the article type. Archetypes automatically determine color palettes, motion profiles, default transitions, and music mood:
 
-A long guide gets two or three center cards. A short post gets one. Cards hold the lines worth remembering. Everything else is a photo scene.
+| Archetype | Best For | Default Palette | Motion Profile | Music Mood |
+| :--- | :--- | :--- | :--- | :--- |
+| `listicle-punch` | Tip roundups, tool reviews | `neon-cyber` | Punch-zoom & fast horizontal pans | `upbeat-minimal` |
+| `story-arc` | Case studies, post-mortems, essays | `clean-dark` | Smooth push-ins & pulls | `ambient` |
+| `explainer-stack` | Concepts, how-tos, architectures | `ocean-slate` | Push-in, tilt-down, static overlay | `tech-pulse` |
+| `myth-vs-fact` | Best practice debates, dos & don'ts | `ember` | Split pans & punch-zooms | `upbeat-minimal` |
+| `stat-drop` | Data-heavy posts, benchmark tests | `sunset-gold` | Punch-zoom & count-up stat cards | `tech-pulse` |
+| `quote-reel` | Philosophy, interviews, principles | `forest-emerald` | Diagonal drift & elegant typography | `calm` |
 
-Cover the arc: what it is about, the main advice, one concrete case, the close. Do not recite every bullet in the post.
+### Color Palettes Available
+- `neon-cyber`: Cyan (`#00F0FF`) + Neon Pink (`#FF0055`) on Deep Slate (`#0B0E14`)
+- `clean-dark`: Warm Cream (`#E6D3B3`) + Amber Gold (`#F59E0B`) on Charcoal (`#12141A`)
+- `ocean-slate`: Sky Blue (`#38BDF8`) + Indigo (`#818CF8`) on Dark Navy (`#0F172A`)
+- `ember`: Fire Orange (`#FF6B35`) + Amber (`#FFA500`) on Dark Violet (`#121014`)
+- `sunset-gold`: Warm Amber (`#F59E0B`) + Coral Red (`#EF4444`) on Warm Black (`#171212`)
+- `forest-emerald`: Emerald Green (`#10B981`) + Mint (`#34D399`) on Dark Pine (`#0B1411`)
 
-The bottom line is a caption of the words being spoken, timed to the voice. The renderer builds that from the voice track. Do not write a second script for it.
+---
 
-### Intro and outro
+## 3. Beat Kinds & Motion Library
 
-First beat is `kind: intro`. Last beat is `kind: outro`. Write both from this article.
+To keep videos visually dynamic and prevent the "AI slideshow" look, **no more than 50% of beats should be photo stills**. Alternate with high-impact visual cards:
 
-- `hook` is a short on-screen line, about 3–6 words. `voice` is the spoken version, one or two sentences.
-- The intro hook is a catch. It is not "Let's begin", "In this video", or a title read aloud.
-- The outro hook is the last thing on screen. The picture then fades to black. It is not "Thanks for watching", "Follow for more", or a line copied from another short.
-- Read the hook back. If it would fit a different blog unchanged, rewrite it.
+### Available Beat Kinds:
+1. `intro`: Hook text banner + moving background/card. Spoken narration starts at 0.0s.
+2. `scene`: Photo from article or AI generated 9:16 still with camera motion.
+3. `card`: Clean UI card with title and body lines (e.g. `layout: "numbered-stack"`). Split lines with `|`.
+4. `stat`: Big-number callout (`value: "10x"`, `label: "faster page loads"`).
+5. `split`: Before vs After / Myth vs Fact two-panel comparison (`before: "..."`, `after: "..."`).
+6. `code`: Code snippet window with syntax-styled lines (`language: "python"`, `code: "..."`).
+7. `quote`: Large quotation statement with author attribution (`quote: "..."`, `author: "..."`).
+8. `outro`: Resolution beat. Supports seamless `ending: "loop"` or `ending: "fade"`.
 
-### 3. Beats
+### Motion Types (Never repeat the same motion back-to-back):
+- `push-in`: Smooth gradual zoom-in (1.0 -> 1.15)
+- `pull-out`: Smooth zoom-out (1.15 -> 1.0)
+- `pan-left` / `pan-right`: Smooth horizontal window tracking
+- `tilt-up` / `tilt-down`: Smooth vertical window tracking
+- `diagonal-drift`: Combined diagonal pan and subtle scale
+- `punch-zoom`: Rapid 0.35s snap zoom for emphasis
+- `static-with-overlay`: Subtle ambient float
 
-Save `shorts/<slug>/beats.json`.
+---
+
+## 4. Extended `beats.json` Schema
+
+Save the beat plan to `shorts/<slug>/beats.json`:
 
 ```json
 {
-  "source": "https://example.com/post",
-  "title": "Post title",
-  "size": "long",
+  "source": "https://example.com/post-slug",
+  "title": "Clean Code Rules That Actually Matter",
+  "size": "short",
+  "archetype": "stat-drop",
+  "palette": "sunset-gold",
+  "seed": 48213,
+  "voice": {
+    "name": "en-US-AndrewNeural",
+    "rate": "+4%",
+    "pitch": "+0Hz"
+  },
+  "music": {
+    "mood": "tech-pulse",
+    "duck_db": -14
+  },
+  "cta": "none",
   "beats": [
     {
       "kind": "intro",
-      "image": "images/open.jpg",
-      "hook": "A line only this post would open on",
-      "voice": "One or two sentences that earn the next scene."
+      "hook_pattern": "number-shock",
+      "hook": "80% of bugs come from 2 mistakes",
+      "voice": "Eighty percent of software bugs come from just two common mistakes.",
+      "motion": "punch-zoom",
+      "sfx": "whoosh"
     },
     {
-      "kind": "scene",
-      "image": "images/hero.jpg",
-      "voice": "Two or three spoken sentences that move the story."
+      "kind": "stat",
+      "value": "80%",
+      "label": "preventable software bugs",
+      "voice": "Most developers overlook state mutation and unhandled edge cases.",
+      "motion": "push-in"
+    },
+    {
+      "kind": "split",
+      "label_left": "Common Mistake",
+      "before": "Mutating shared global state across functions",
+      "label_right": "Clean Fix",
+      "after": "Return immutable copies or pure function results",
+      "voice": "Stop mutating shared global state. Always return pure, immutable values.",
+      "motion": "pan-left"
     },
     {
       "kind": "card",
-      "caption": "Card title|Line to remember|Another line",
-      "voice": "The same idea, spoken as sentences, not as the card text."
+      "layout": "numbered-stack",
+      "caption": "Action Items|Enforce immutability|Validate input boundaries",
+      "voice": "Enforce immutability in your models, and validate all input boundaries.",
+      "motion": "pan-right"
     },
     {
       "kind": "outro",
-      "image": "images/close.jpg",
-      "hook": "A last line only this post would end on",
-      "voice": "One sentence that lands the story, then stop."
+      "hook": "Write code that cannot lie",
+      "voice": "Write code that cannot lie.",
+      "ending": "loop"
     }
   ]
 }
 ```
 
-- `kind`: `intro`, `scene`, `card`, or `outro`.
-- `scene` uses a photo. The picture slowly zooms or pans. The bottom caption follows the voice. Do not add a separate lower-third title.
-- `card` puts the important lines in the center. Split lines with `|`. The voice explains them. The bottom caption still follows the voice.
-- `intro` and `outro` use `hook` plus `voice`. Outro holds the hook, then fades to black.
-- First beat is the intro. Last beat is the outro.
+---
 
-### Pictures
+## 5. Workflow Steps
 
-Use photos from the article, not logos, icons, or nav. One picture should not repeat for every scene.
+```
+Task Progress:
+- [ ] Check shorts/.history.json for last archetype and hook
+- [ ] Fetch the blog URL and extract core takeaways
+- [ ] Pick fresh Archetype, Hook Formula, and Palette
+- [ ] Write shorts/<slug>/beats.json with varied beat kinds
+- [ ] Render video and generate shorts/<slug>/meta.md
+- [ ] Verify QA checklist before replying
+```
 
-If the article has no usable photo, or fewer photos than picture beats, generate the missing frames. Ask for a 9:16 image, no words in the picture, and a subject that matches that beat. Save each file under `images/` next to `beats.json`. The renderer animates those frames the same way it animates article photos.
+### Step 1: Anti-Repetition Check
+Read `shorts/.history.json` (if present). Ensure your new Short uses a different archetype, hook formula, and palette than the previous 3 entries.
 
-### 4. Render
+### Step 2: Extract & Structure
+Read the article body. Determine whether `short` (30–45s) or `long` (60–75s) is best.
 
-Run the render script from the skill directory (e.g. `<skill-path>/scripts/render_short.py` depending on where the skill was installed, such as `.agents/skills/blog-to-shorts/scripts/render_short.py` or `.cursor/skills/blog-to-shorts/scripts/render_short.py`):
+### Step 3: Write Beats
+Assemble 4–7 beats. Ensure:
+- Voice begins at 0.0s.
+- Hook voice is <= 12 words.
+- At least 3 different beat kinds are used.
+- Motions vary across adjacent beats.
+
+### Step 4: Render Video
+Run the render script from the skill directory:
 
 ```bash
 python <skill-path>/scripts/render_short.py shorts/<slug>/beats.json -o shorts/<slug>/short.mp4
 ```
 
-Needs `ffmpeg`, `ffprobe`, and `edge-tts` (`pip install edge-tts`). Voice defaults to `en-US-AndrewNeural` at a slightly calm rate. Falls back to system speech if neural voice is unavailable.
+The renderer automatically:
+1. Synthesizes voiceover with WordBoundary timestamps via `edge-tts`.
+2. Generates crisp, high-DPI Pillow visual cards for `stat`, `card`, `split`, `code`, `quote`.
+3. Scales stills to 1620x2880 to guarantee zero-jitter smooth motion.
+4. Places word-pop subtitles safely in the YouTube Safe Zone (`y=1340px`).
+5. Ducks ambient backing audio by -14dB and normalizes audio to -14 LUFS standard.
+6. Exports `shorts/<slug>/meta.md` with YouTube title, description, tags, and cover frame timestamp.
+7. Logs execution into `shorts/.history.json`.
 
-Prints `OK <path> <seconds>`.
+---
 
-If it prints `OVER_CAP`, shorten the story and render again. Keep the arc. Do not turn it back into a list.
+## 6. Pre-Flight QA Checklist
 
-### 5. Reply
-
-Report the mp4 path, duration, and the story in a few lines. Do not upload the file.
-
-## Failure
-
-- Missing URL: ask.
-- Fetch blocked or empty: stop.
-- Not English: stop and ask.
-- `ffmpeg` missing: stop and name it.
-- Over the cap after one tighten: stop and say what would not fit.
+Before reporting completion to the user, verify:
+- [x] Voice starts at 0.0s on the very first frame.
+- [x] Spoken hook is <= 12 words and uses a recognized hook formula.
+- [x] No motion type repeated consecutively.
+- [x] Captions and cards are placed inside the YouTube Safe Zone (no bottom UI clipping).
+- [x] No single image reused across multiple scenes.
+- [x] Archetype differs from the previous entry in `shorts/.history.json`.
+- [x] Final video duration is within the cap (<=60s for short, <=90s for long).
+- [x] `shorts/<slug>/meta.md` is generated and formatted.

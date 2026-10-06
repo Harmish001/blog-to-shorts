@@ -1,0 +1,48 @@
+{
+  "source": "https://example.com/clean-architecture-myths",
+  "title": "Clean Code Myths Hurting Your Velocity",
+  "size": "short",
+  "archetype": "myth-vs-fact",
+  "palette": "ember",
+  "seed": 61204,
+  "voice": {
+    "name": "en-US-AndrewNeural",
+    "rate": "+5%",
+    "pitch": "+0Hz"
+  },
+  "music": {
+    "mood": "upbeat-minimal",
+    "duck_db": -14
+  },
+  "beats": [
+    {
+      "kind": "intro",
+      "hook_pattern": "mistake-callout",
+      "hook": "You're over-engineering clean code",
+      "voice": "Most developers treat clean code rules like dogma, and it quietly destroys their shipping speed.",
+      "motion": "pan-left",
+      "sfx": "whoosh"
+    },
+    {
+      "kind": "split",
+      "label_left": "Common Myth",
+      "before": "Every class needs an interface and five layers of abstraction",
+      "label_right": "Practical Reality",
+      "after": "Write simple direct functions until you actually need two implementations",
+      "voice": "You don't need interfaces and five abstraction layers for single-use internal logic.",
+      "motion": "punch-zoom"
+    },
+    {
+      "kind": "card",
+      "caption": "The Rule of 3|Duplicate once before abstracting|Refactor when patterns emerge",
+      "voice": "Follow the rule of three: write straightforward code first, and extract abstractions only when patterns repeat.",
+      "motion": "pan-right"
+    },
+    {
+      "kind": "outro",
+      "hook": "Readability beats cleverness every single time",
+      "voice": "Remember: readability beats clever abstractions every single time.",
+      "ending": "loop"
+    }
+  ]
+}

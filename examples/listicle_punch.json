@@ -1,0 +1,49 @@
+{
+  "source": "https://example.com/speed-up-python",
+  "title": "3 Ways to Make Python Code 10x Faster",
+  "size": "short",
+  "archetype": "listicle-punch",
+  "palette": "neon-cyber",
+  "seed": 48213,
+  "voice": {
+    "name": "en-US-AndrewNeural",
+    "rate": "+5%",
+    "pitch": "+0Hz"
+  },
+  "music": {
+    "mood": "upbeat-minimal",
+    "duck_db": -14
+  },
+  "cta": "none",
+  "beats": [
+    {
+      "kind": "intro",
+      "hook_pattern": "bold-claim",
+      "hook": "Your Python is slow for 1 reason",
+      "voice": "Your Python code isn't slow because of the language. It's slow because of how you loop.",
+      "motion": "punch-zoom",
+      "caption_style": "word-pop",
+      "sfx": "whoosh"
+    },
+    {
+      "kind": "stat",
+      "value": "12.4x",
+      "label": "speedup with list comprehensions",
+      "voice": "Replacing manual appends with list comprehensions gives an instant twelve times speedup.",
+      "motion": "push-in"
+    },
+    {
+      "kind": "card",
+      "layout": "numbered-stack",
+      "caption": "Three Quick Fixes|Use built-in functions|Vectorize with Numpy|Avoid global lookups",
+      "voice": "Use built-in functions, vectorize your math with NumPy, and avoid global lookups inside tight loops.",
+      "motion": "pan-right"
+    },
+    {
+      "kind": "outro",
+      "hook": "Optimize algorithms before language switches",
+      "voice": "Always optimize your algorithm before blaming the language.",
+      "ending": "loop"
+    }
+  ]
+}

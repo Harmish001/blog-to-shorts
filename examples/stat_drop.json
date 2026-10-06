@@ -1,0 +1,47 @@
+{
+  "source": "https://example.com/site-speed-conversion",
+  "title": "Why 100ms Page Delay Ruins Revenue",
+  "size": "short",
+  "archetype": "stat-drop",
+  "palette": "sunset-gold",
+  "seed": 33901,
+  "voice": {
+    "name": "en-US-AndrewNeural",
+    "rate": "+6%",
+    "pitch": "+0Hz"
+  },
+  "music": {
+    "mood": "tech-pulse",
+    "duck_db": -14
+  },
+  "beats": [
+    {
+      "kind": "intro",
+      "hook_pattern": "number-shock",
+      "hook": "A 0.1s delay cuts sales by 7%",
+      "voice": "A mere one-tenth of a second delay in load time slashes your sales conversion by seven percent.",
+      "motion": "punch-zoom",
+      "sfx": "whoosh"
+    },
+    {
+      "kind": "stat",
+      "value": "53%",
+      "label": "of mobile visitors leave after 3s",
+      "voice": "Over half of all mobile visitors will abandon your page completely if it takes more than three seconds to load.",
+      "motion": "push-in"
+    },
+    {
+      "kind": "card",
+      "layout": "numbered-stack",
+      "caption": "How to Fix Latency|Compress hero images to WebP|Defer non-critical scripts|Enable edge CDN caching",
+      "voice": "Compress your hero images, defer third-party scripts, and cache assets on an edge content delivery network.",
+      "motion": "tilt-up"
+    },
+    {
+      "kind": "outro",
+      "hook": "Speed isn't a feature; it's the foundation",
+      "voice": "Page speed isn't a feature—it is the foundation of user retention.",
+      "ending": "loop"
+    }
+  ]
+}
