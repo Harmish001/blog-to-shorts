@@ -14,13 +14,48 @@ import sys
 import tempfile
 from pathlib import Path
 
+import os
+import platform
+
 W, H = 1080, 1920
-FONT = "C:/Windows/Fonts/segoeuib.ttf"
 BG = "0x12141a"
 ACCENT = "0xE6D3B3"
 DEFAULT_VOICE = "en-US-AndrewNeural"
 SHORT_CAP = 70.0
 LONG_CAP = 120.0
+
+
+def resolve_font(custom_font=None):
+    if custom_font and Path(custom_font).exists():
+        return str(Path(custom_font))
+
+    candidates = [
+        # Windows
+        "C:/Windows/Fonts/segoeuib.ttf",
+        "C:/Windows/Fonts/segoeui.ttf",
+        "C:/Windows/Fonts/arialbd.ttf",
+        "C:/Windows/Fonts/arial.ttf",
+        # macOS
+        "/System/Library/Fonts/SFNS.ttf",
+        "/System/Library/Fonts/SFPro.ttf",
+        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "/Library/Fonts/Arial.ttf",
+        "/System/Library/Fonts/HelveticaNeue.ttc",
+        # Linux
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+        "/usr/share/fonts/TTF/DejaVuSans.ttf",
+    ]
+    for p in candidates:
+        if Path(p).exists():
+            return p
+    return "Arial"
+
+
+FONT = resolve_font()
 
 
 def run(cmd):
@@ -72,6 +107,27 @@ def speak_sapi(text, wav):
     run(["powershell", "-NoProfile", "-File", str(ps1)])
 
 
+def speak_system_fallback(text, dest):
+    if sys.platform == "win32" and shutil.which("powershell"):
+        wav = dest.with_suffix(".wav")
+        speak_sapi(text, wav)
+        if dest.suffix != ".wav" and wav.exists():
+            wav.replace(dest)
+        return even_cues(text, duration(dest))
+    elif sys.platform == "darwin" and shutil.which("say"):
+        aiff = dest.with_suffix(".aiff")
+        run(["say", "-o", str(aiff), text.strip()])
+        run(["ffmpeg", "-y", "-i", str(aiff), str(dest)])
+        aiff.unlink(missing_ok=True)
+        return even_cues(text, duration(dest))
+    else:
+        sys.stderr.write(
+            "Neural voice failed and no system TTS fallback found. "
+            "Please install edge-tts: pip install edge-tts\n"
+        )
+        raise SystemExit(1)
+
+
 def ticks_to_sec(value):
     value = float(value)
     if value > 1000:
@@ -115,8 +171,8 @@ def speak(text, dest, voice):
     try:
         import edge_tts
     except ImportError:
-        speak_sapi(text, dest)
-        return even_cues(text, duration(dest))
+        sys.stderr.write("edge-tts not installed; attempting fallback voice\n")
+        return speak_system_fallback(text, dest)
 
     async def _save():
         comm = edge_tts.Communicate(text.strip(), voice, rate="-8%")
@@ -137,11 +193,8 @@ def speak(text, dest, voice):
     try:
         words = asyncio.run(_save())
     except Exception as exc:
-        sys.stderr.write("neural voice failed (%s); using Windows voice\n" % exc)
-        speak_sapi(text, dest.with_suffix(".wav"))
-        if dest.suffix != ".wav" and dest.with_suffix(".wav").exists():
-            dest.with_suffix(".wav").replace(dest)
-        return even_cues(text, duration(dest))
+        sys.stderr.write("neural voice failed (%s); using fallback voice\n" % exc)
+        return speak_system_fallback(text, dest)
     if not words:
         return even_cues(text, duration(dest))
     return group_cues(words)
@@ -458,13 +511,17 @@ def self_check():
 
 
 def main():
+    global FONT
     parser = argparse.ArgumentParser(description="Render a 9:16 YouTube Short")
     parser.add_argument("beats_json", nargs="?")
     parser.add_argument("-o", "--output")
     parser.add_argument("--voice", default=DEFAULT_VOICE)
+    parser.add_argument("--font", default=None, help="Custom font file path (.ttf/.ttc)")
     parser.add_argument("--max-sec", type=float, default=None)
     parser.add_argument("--self-check", action="store_true")
     args = parser.parse_args()
+    if args.font:
+        FONT = resolve_font(args.font)
     if args.self_check:
         self_check()
         return

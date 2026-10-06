@@ -113,13 +113,13 @@ If the article has no usable photo, or fewer photos than picture beats, generate
 
 ### 4. Render
 
-From the workspace root:
+Run the render script from the skill directory (e.g. `<skill-path>/scripts/render_short.py` depending on where the skill was installed, such as `.agents/skills/blog-to-shorts/scripts/render_short.py` or `.cursor/skills/blog-to-shorts/scripts/render_short.py`):
 
 ```bash
-python .cursor/skills/blog-to-shorts/scripts/render_short.py shorts/<slug>/beats.json -o shorts/<slug>/short.mp4
+python <skill-path>/scripts/render_short.py shorts/<slug>/beats.json -o shorts/<slug>/short.mp4
 ```
 
-Needs `ffmpeg`, `ffprobe`, and `edge-tts`. Voice is `en-US-AndrewNeural` at a slightly calm rate. Do not use the Windows desktop voice unless the neural voice fails.
+Needs `ffmpeg`, `ffprobe`, and `edge-tts` (`pip install edge-tts`). Voice defaults to `en-US-AndrewNeural` at a slightly calm rate. Falls back to system speech if neural voice is unavailable.
 
 Prints `OK <path> <seconds>`.
 
