@@ -635,7 +635,12 @@ def synthesize_speech(
     words: List[Dict[str, Any]] = []
 
     async def _run():
-        comm = edge_tts.Communicate(text.strip(), voice=voice, rate=rate_offset, pitch=pitch_offset)
+        try:
+            comm = edge_tts.Communicate(
+                text.strip(), voice=voice, rate=rate_offset, pitch=pitch_offset, boundary="WordBoundary"
+            )
+        except TypeError:
+            comm = edge_tts.Communicate(text.strip(), voice=voice, rate=rate_offset, pitch=pitch_offset)
         buf = bytearray()
         async for chunk in comm.stream():
             if chunk["type"] == "audio":
@@ -664,23 +669,38 @@ def synthesize_speech(
 
 
 def build_word_cues(words: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    if not words:
+        return []
+
     chunks, buf = [], []
     for w in words:
         buf.append(w)
-        if len(" ".join(x["text"] for x in buf)) >= 26 or len(buf) >= 4:
+        txt = w["text"]
+        ends_clause = any(txt.endswith(p) for p in (",", ".", "!", "?", ";", ":", "—", "-"))
+        cur_phrase = " ".join(x["text"] for x in buf)
+        if ends_clause or len(cur_phrase) >= 24 or len(buf) >= 4:
             chunks.append(buf)
             buf = []
     if buf:
         chunks.append(buf)
 
     cues = []
-    for chunk in chunks:
-        start = chunk[0]["start"]
-        end = max(chunk[-1]["end"] + 0.1, start + 0.3)
+    for i, chunk in enumerate(chunks):
+        start = max(0.0, chunk[0]["start"])
+        last_word_end = chunk[-1]["end"]
+        if i + 1 < len(chunks):
+            next_start = max(0.0, chunks[i + 1][0]["start"])
+            if next_start - last_word_end > 0.4:
+                end = last_word_end + 0.25
+            else:
+                end = max(next_start - 0.02, start + 0.15)
+        else:
+            end = last_word_end + 0.35
+
         cues.append({
             "phrase": " ".join(x["text"] for x in chunk),
-            "start": start,
-            "end": end,
+            "start": round(start, 3),
+            "end": round(end, 3),
             "words": chunk,
         })
     return cues
