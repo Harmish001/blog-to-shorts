@@ -17,6 +17,7 @@ import json
 import math
 import os
 import random
+import re
 import shutil
 import subprocess
 import sys
@@ -45,6 +46,13 @@ SAFE_ZONE = {
     "right": 950,
     "caption_y": 1320,
 }
+
+VALID_TRANSITIONS = {
+    "cut", "fade", "fadeblack", "dissolve", "slideleft", "slideright", "slideup",
+    "slidedown", "wipeleft", "wiperight", "zoomin", "circleopen", "smoothleft",
+    "smoothright", "radial", "pixelize",
+}
+DEFAULT_XFADE_DUR = 0.22
 
 PALETTES = {
     "ember": {
@@ -341,8 +349,8 @@ def build_card_overlay(
     accent_rgba = hex_to_rgb(palette["accent"]) + (255,)
 
     # Safe text margin
-    text_x = 90
-    max_w = W - 180
+    text_x = 120
+    max_w = W - 240
     cy = 720
 
     # Title text — clean Inter Bold
@@ -360,7 +368,7 @@ def build_card_overlay(
     # Body lines (points)
     body_font = get_font(42, bold=False)
     for i, bl in enumerate(body_lines):
-        bullet = f"{i+1}." if beat.get("layout") == "numbered-stack" else "▸"
+        bullet = f"{i+1}." if beat.get("layout") == "numbered-stack" else ">"
         draw_text_with_shadow(draw, (text_x, cy), bullet, body_font, fill=accent_rgba)
 
         wrapped = wrap_text(bl, body_font, max_w - 50)
@@ -424,28 +432,28 @@ def build_split_overlay(beat: Dict[str, Any], palette: Dict[str, str]) -> Image.
     # --- Section 1 (Red / Myth / Initial) ---
     cy = 580
     # Small pill badge for tag only
-    t1_txt = f"✕  {left_title}"
+    t1_txt = f"{left_title}"
     tb1 = badge_font.getbbox(t1_txt)
     tw1 = tb1[2] - tb1[0]
-    draw.rounded_rectangle([(90, cy), (90 + tw1 + 36, cy + 44)], radius=12, fill=(220, 40, 40, 220))
-    draw.text((108, cy + 6), t1_txt, fill=(255, 255, 255, 255), font=badge_font)
+    draw.rounded_rectangle([(120, cy), (120 + tw1 + 36, cy + 44)], radius=12, fill=(220, 40, 40, 220))
+    draw.text((138, cy + 6), t1_txt, fill=(255, 255, 255, 255), font=badge_font)
 
     cy += 64
-    for line in wrap_text(left_body, body_font, W - 180):
-        draw_text_with_shadow(draw, (90, cy), line, body_font, fill=(255, 230, 230, 255))
+    for line in wrap_text(left_body, body_font, W - 240):
+        draw_text_with_shadow(draw, (120, cy), line, body_font, fill=(255, 230, 230, 255))
         cy += 52
 
     # --- Section 2 (Green / Fact / Reality) ---
     cy += 48
-    t2_txt = f"✓  {right_title}"
+    t2_txt = f"{right_title}"
     tb2 = badge_font.getbbox(t2_txt)
     tw2 = tb2[2] - tb2[0]
-    draw.rounded_rectangle([(90, cy), (90 + tw2 + 36, cy + 44)], radius=12, fill=(16, 185, 129, 220))
-    draw.text((108, cy + 6), t2_txt, fill=(255, 255, 255, 255), font=badge_font)
+    draw.rounded_rectangle([(120, cy), (120 + tw2 + 36, cy + 44)], radius=12, fill=(16, 185, 129, 220))
+    draw.text((138, cy + 6), t2_txt, fill=(255, 255, 255, 255), font=badge_font)
 
     cy += 64
-    for line in wrap_text(right_body, body_font, W - 180):
-        draw_text_with_shadow(draw, (90, cy), line, body_font, fill=(230, 255, 240, 255))
+    for line in wrap_text(right_body, body_font, W - 240):
+        draw_text_with_shadow(draw, (120, cy), line, body_font, fill=(230, 255, 240, 255))
         cy += 52
 
     return overlay
@@ -710,27 +718,78 @@ def build_word_cues(words: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 # Safe Zone Subtitle Caption Builder
 # ---------------------------------------------------------------------------
 
+def _norm_word(text: str) -> str:
+    return re.sub(r"[^\w%$]", "", text.lower())
+
+
+def is_emphasis_word(text: str, extra: set) -> bool:
+    """Numbers, money, percentages, and any word listed in beat['emphasis'] get the highlight color."""
+    return bool(re.search(r"\d", text)) or "%" in text or "$" in text or _norm_word(text) in extra
+
+
 def build_caption_filters(
     cues: List[Dict[str, Any]],
     work_dir: Path,
     stem: str,
+    emphasis: Optional[set] = None,
+    highlight_hex: str = "#FFFFFF",
 ) -> List[str]:
-    """Build safe-zone drawtext subtitle filters."""
+    """Build safe-zone drawtext subtitle filters. Emphasized words are drawn in the highlight color."""
     font = esc_path(Path(FONT_PATH))
-    filters = []
+    filters: List[str] = []
     cap_y = SAFE_ZONE["caption_y"]
+    extra = emphasis or set()
+    size = 46
+    try:
+        pil_font = ImageFont.truetype(FONT_PATH, size)
+        asc, desc = pil_font.getmetrics()
+        line_h = asc + desc
+        space_w = pil_font.getlength(" ")
+    except Exception:
+        pil_font = None
+        line_h = space_w = 0
+    hl = highlight_hex.lstrip("#")
+    # drawtext places each string by its own glyph extents, so words with/without ascenders drift.
+    # "y=<const>-ascent" pins every word to one baseline (verified empirically on ffmpeg 6.1).
+    baseline = cap_y + int(size * 0.78) + 2
+    box_h = int(size * 1.8)
+
     for i, cue in enumerate(cues):
         phrase = cue["phrase"]
         s, e = cue["start"], max(cue["end"], cue["start"] + 0.2)
-        txt = work_dir / f"{stem}_sub_{i}.txt"
-        txt.write_text(phrase, encoding="utf-8")
+        en = f"enable='between(t\\,{s:.3f}\\,{e:.3f})'"
+        words = [w["text"] for w in cue.get("words", [])] or phrase.split()
+        has_emph = any(is_emphasis_word(w, extra) for w in words)
+
+        if not has_emph or pil_font is None:
+            txt = work_dir / f"{stem}_sub_{i}.txt"
+            txt.write_text(phrase, encoding="utf-8")
+            filters.append(
+                f"drawtext=fontfile='{font}':textfile='{esc_path(txt)}':"
+                f"fontsize={size}:fontcolor=white:"
+                f"box=1:boxcolor=black@0.78:boxborderw=18:"
+                f"x=(w-text_w)/2:y={cap_y}:{en}"
+            )
+            continue
+
+        widths = [pil_font.getlength(w) for w in words]
+        total = sum(widths) + space_w * (len(words) - 1)
+        x = (W - total) / 2.0
+        pad = 18
         filters.append(
-            f"drawtext=fontfile='{font}':textfile='{esc_path(txt)}':"
-            f"fontsize=46:fontcolor=white:"
-            f"box=1:boxcolor=black@0.78:boxborderw=18:"
-            f"x=(w-text_w)/2:y={cap_y}:"
-            f"enable='between(t\\,{s:.3f}\\,{e:.3f})'"
+            f"drawbox=x={x - pad:.0f}:y={cap_y - pad}:w={total + 2 * pad:.0f}:h={box_h}:"
+            f"color=black@0.78:t=fill:{en}"
         )
+        for j, (w, wd) in enumerate(zip(words, widths)):
+            txt = work_dir / f"{stem}_sub_{i}_{j}.txt"
+            txt.write_text(w, encoding="utf-8")
+            color = f"0x{hl}" if is_emphasis_word(w, extra) else "white"
+            filters.append(
+                f"drawtext=fontfile='{font}':textfile='{esc_path(txt)}':"
+                f"fontsize={size}:fontcolor={color}:"
+                f"x={x:.1f}:y={baseline}-ascent:{en}"
+            )
+            x += wd + space_w
     return filters
 
 
@@ -765,7 +824,7 @@ def build_animated_bullet_filters(
         cy = y_start + i * line_gap
 
         bullet_txt = work_dir / f"{stem}_bmarker_{i}.txt"
-        bullet_txt.write_text("▸", encoding="utf-8")
+        bullet_txt.write_bytes(b">")
 
         filters.append(
             f"drawtext=fontfile='{font}':textfile='{esc_path(bullet_txt)}':"
@@ -814,11 +873,13 @@ def render_beat_segment(
     prepped_bg = work_dir / f"{out_mp4.stem}_bg.png"
     prepare_background_image(bg_image_path, prepped_bg, blur_radius=blur_amt, darken=darken_amt)
 
-    use_overlay_png = role in ("card", "stat", "split", "code", "quote", "outro")
-    final_bg_img = prepped_bg
+    use_overlay_png = role in ("intro", "card", "stat", "split", "code", "quote", "outro")
+    ov = None
 
     if use_overlay_png:
-        if role == "card":
+        if role == "intro":
+            ov = build_intro_hook_overlay(beat, palette)
+        elif role == "card":
             ov = build_card_overlay(beat, palette, role)
         elif role == "stat":
             ov = build_stat_overlay(beat, palette)
@@ -830,73 +891,79 @@ def render_beat_segment(
             ov = build_quote_overlay(beat, palette)
         elif role == "outro":
             ov = build_outro_overlay(beat, palette)
-        else:
-            ov = None
-
-        if ov:
-            composited = work_dir / f"{out_mp4.stem}_composited.png"
-            composite_overlay_on_photo(prepped_bg, ov, composited)
-            final_bg_img = composited
 
     fade_in = 0.0 if role == "intro" else 0.20
     fade_out = 0.0 if role == "outro" else 0.22
     fade_out_st = max(dur - fade_out, 0.1)
 
-    layers = [
-        "scale=1620:2880:force_original_aspect_ratio=increase,crop=1620:2880",
-        f"zoompan={build_motion_expr(motion, frames)}:d={frames}:s={W}x{H}:fps={FPS}",
-    ]
+    emph = {_norm_word(str(x)) for x in (beat.get("emphasis") or [])}
+    cap_filters = build_caption_filters(
+        cues, work_dir, out_mp4.stem, emphasis=emph, highlight_hex=palette.get("highlight", "#FFFFFF")
+    )
 
-    if fade_in > 0:
-        layers.append(f"fade=t=in:st=0:d={fade_in:.2f}")
-    if fade_out > 0:
-        layers.append(f"fade=t=out:st={fade_out_st:.2f}:d={fade_out:.2f}")
+    if ov:
+        ov_path = work_dir / f"{out_mp4.stem}_ov.png"
+        ov.save(ov_path, "PNG")
 
-    layers.append(build_vignette_filter())
+        bg_chain = [
+            "scale=1620:2880:force_original_aspect_ratio=increase,crop=1620:2880",
+            f"zoompan={build_motion_expr(motion, frames)}:d={frames}:s={W}x{H}:fps={FPS}",
+            build_vignette_filter(),
+        ]
 
-    # --- Intro hook text: WRAPPED cleanly to prevent edge clipping ---
-    if role == "intro":
-        hook = str(beat.get("hook") or "")
-        if hook:
-            font = esc_path(Path(FONT_PATH))
-            # Wrap text to max 22 chars per line so FFmpeg NEVER clips text
-            wrapped_lines = wrap_text_by_chars(hook, max_chars=22)
-            hook_file = work_dir / f"{out_mp4.stem}_hook.txt"
-            hook_file.write_text("\n".join(wrapped_lines), encoding="utf-8")
+        post_chain = []
+        if fade_in > 0:
+            post_chain.append(f"fade=t=in:st=0:d={fade_in:.2f}")
+        if fade_out > 0:
+            post_chain.append(f"fade=t=out:st={fade_out_st:.2f}:d={fade_out:.2f}")
+        post_chain.extend(cap_filters)
 
-            layers.append(
-                f"drawtext=fontfile='{font}':textfile='{esc_path(hook_file)}':"
-                f"fontsize=60:fontcolor=white:"
-                f"shadowcolor=black@0.8:shadowx=3:shadowy=3:"
-                f"line_spacing=18:"
-                f"x=(w-text_w)/2:y=h*0.15:"
-                f"enable='gte(t\\,0.1)'"
-            )
-            layers.append(
-                f"drawbox=x=(w-160)/2:y=h*0.15+150:w=160:h=5:"
-                f"color={palette['accent'].replace('#', '')}@0.9:t=fill:"
-                f"enable='gte(t\\,0.2)'"
-            )
+        post_str = ("," + ",".join(post_chain)) if post_chain else ""
+        filter_complex = f"[0:v]{','.join(bg_chain)}[bg]; [bg][1:v]overlay=0:0{post_str}[v]"
 
-    # Safe-zone word captions
-    cap_filters = build_caption_filters(cues, work_dir, out_mp4.stem)
-    layers.extend(cap_filters)
+        cmd = [
+            "ffmpeg", "-y",
+            "-loop", "1", "-i", str(prepped_bg),
+            "-loop", "1", "-i", str(ov_path),
+            "-i", str(audio_path),
+            "-t", f"{dur:.3f}",
+            "-filter_complex", filter_complex,
+            "-map", "[v]",
+            "-map", "2:a",
+            "-af", f"apad=whole_dur={dur:.3f}",
+            "-r", str(FPS),
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac", "-b:a", "160k",
+            str(out_mp4),
+        ]
+    else:
+        layers = [
+            "scale=1620:2880:force_original_aspect_ratio=increase,crop=1620:2880",
+            f"zoompan={build_motion_expr(motion, frames)}:d={frames}:s={W}x{H}:fps={FPS}",
+        ]
+        if fade_in > 0:
+            layers.append(f"fade=t=in:st=0:d={fade_in:.2f}")
+        if fade_out > 0:
+            layers.append(f"fade=t=out:st={fade_out_st:.2f}:d={fade_out:.2f}")
+        layers.append(build_vignette_filter())
+        layers.extend(cap_filters)
 
-    vf_str = ",".join(layers)
+        cmd = [
+            "ffmpeg", "-y",
+            "-loop", "1", "-i", str(prepped_bg),
+            "-i", str(audio_path),
+            "-t", f"{dur:.3f}",
+            "-vf", ",".join(layers),
+            "-af", f"apad=whole_dur={dur:.3f}",
+            "-r", str(FPS),
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac", "-b:a", "160k",
+            str(out_mp4),
+        ]
 
-    run_cmd([
-        "ffmpeg", "-y",
-        "-loop", "1", "-i", str(final_bg_img),
-        "-i", str(audio_path),
-        "-t", f"{dur:.3f}",
-        "-vf", vf_str,
-        "-af", f"apad=whole_dur={dur:.3f}",
-        "-r", str(FPS),
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
-        "-pix_fmt", "yuv420p",
-        "-c:a", "aac", "-b:a", "160k",
-        str(out_mp4),
-    ])
+    run_cmd(cmd)
 
 
 # ---------------------------------------------------------------------------
@@ -1078,6 +1145,9 @@ def render(
             audio_dur = get_media_duration(audio_path)
 
             tail = 0.08 if (kind == "outro" and ending_mode == "loop") else 0.35
+            if beat.get("tail") is not None:
+                tail = max(0.0, min(float(beat["tail"]), 1.5))
+            beat_palette = PALETTES.get(beat.get("palette") or "", palette)
             seg_dur = audio_dur + tail
 
             chosen_motion = beat.get("motion")
@@ -1116,17 +1186,28 @@ def render(
                 audio_dur=audio_dur,
                 cues=cues,
                 motion=chosen_motion,
-                palette=palette,
+                palette=beat_palette,
                 role=kind,
                 work_dir=work,
             )
             segs.append(seg_mp4)
 
-        arch_transition = arch.get("default_transition", "fade")
-        XFADE_DUR = 0.22
+        arch_transition = data.get("transition") or arch.get("default_transition", "fade")
+        if arch_transition not in VALID_TRANSITIONS:
+            arch_transition = arch.get("default_transition", "fade")
+        top_dur = float(data.get("transition_dur") or DEFAULT_XFADE_DUR)
 
+        # transitions[i] describes the join between segment i-1 and segment i
+        transitions: List[Tuple[str, float]] = [("cut", 0.0)]
+        for i in range(1, len(beats)):
+            t_name = beats[i].get("transition") or arch_transition
+            if t_name not in VALID_TRANSITIONS:
+                t_name = arch_transition
+            t_dur = float(beats[i].get("transition_dur") or top_dur)
+            transitions.append((t_name, max(0.08, min(t_dur, 0.6))))
+
+        concat_out = work / "concat_video.mp4"
         if len(segs) == 1:
-            concat_out = work / "concat_video.mp4"
             run_cmd([
                 "ffmpeg", "-y", "-i", str(segs[0]),
                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
@@ -1135,8 +1216,11 @@ def render(
                 str(concat_out),
             ])
         else:
-            concat_out = work / "concat_video.mp4"
-            _chain_xfade(segs, concat_out, arch_transition, XFADE_DUR, work)
+            _chain_segments(segs, concat_out, transitions)
+
+        bar_mode = str(data.get("progress_bar") or "none").lower()
+        if bar_mode in ("top", "bottom"):
+            concat_out = _add_progress_bar(concat_out, work, palette["accent"], bar_mode)
 
         total_dur = get_media_duration(concat_out)
 
@@ -1189,46 +1273,67 @@ def render(
     return final_dur
 
 
-def _chain_xfade(
+def _chain_segments(
     segs: List[Path],
     out: Path,
-    transition: str,
-    xfade_dur: float,
-    work: Path,
+    transitions: List[Tuple[str, float]],
 ) -> None:
-    """Chain segments with FFmpeg xfade transitions."""
+    """Join segments in one filter graph. Each join is either a hard cut or a real xfade.
+
+    v1 only applied xfade for exactly 2 segments; with 3+ it silently fell back to plain concat.
+    """
     durations = [get_media_duration(s) for s in segs]
+    cmd = ["ffmpeg", "-y"]
+    for s in segs:
+        cmd += ["-i", str(s)]
 
-    if len(segs) == 2:
-        offset = max(durations[0] - xfade_dur, 0.1)
-        run_cmd([
-            "ffmpeg", "-y",
-            "-i", str(segs[0]), "-i", str(segs[1]),
-            "-filter_complex",
-            f"[0:v][1:v]xfade=transition={transition}:duration={xfade_dur:.3f}:offset={offset:.3f}[v];"
-            f"[0:a][1:a]acrossfade=d={xfade_dur:.3f}[a]",
-            "-map", "[v]", "-map", "[a]",
-            "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
-            "-pix_fmt", "yuv420p", "-r", str(FPS),
-            "-c:a", "aac", "-b:a", "160k",
-            str(out),
-        ])
-        return
+    parts: List[str] = []
+    # Normalize every video input to the same fps/timebase; xfade and concat both require it.
+    for i in range(len(segs)):
+        parts.append(f"[{i}:v]setpts=PTS-STARTPTS,fps={FPS},settb=1/{FPS},format=yuv420p[n{i}]")
+    vlab, alab = "[n0]", "[0:a]"
+    acc = durations[0]
+    for i in range(1, len(segs)):
+        name, xd = transitions[i]
+        xd = min(xd, durations[i] * 0.5, acc * 0.5)
+        vout, aout = f"[v{i}]", f"[a{i}]"
+        if name == "cut" or xd < 0.05:
+            parts.append(f"{vlab}[n{i}]concat=n=2:v=1:a=0,fps={FPS},settb=1/{FPS}{vout}")
+            parts.append(f"{alab}[{i}:a]concat=n=2:v=0:a=1{aout}")
+            acc += durations[i]
+        else:
+            offset = max(acc - xd, 0.05)
+            parts.append(f"{vlab}[n{i}]xfade=transition={name}:duration={xd:.3f}:offset={offset:.3f},fps={FPS},settb=1/{FPS}{vout}")
+            parts.append(f"{alab}[{i}:a]acrossfade=d={xd:.3f}{aout}")
+            acc += durations[i] - xd
+        vlab, alab = vout, aout
 
-    concat_list = work / "concat_list.txt"
-    concat_list.write_text(
-        "".join(f"file '{s.resolve().as_posix()}'\n" for s in segs),
-        encoding="utf-8",
-    )
-    run_cmd([
-        "ffmpeg", "-y",
-        "-f", "concat", "-safe", "0", "-i", str(concat_list),
+    cmd += [
+        "-filter_complex", ";".join(parts),
+        "-map", vlab, "-map", alab,
         "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
         "-pix_fmt", "yuv420p", "-r", str(FPS),
         "-c:a", "aac", "-b:a", "160k",
-        "-movflags", "+faststart",
+        str(out),
+    ]
+    run_cmd(cmd)
+
+
+def _add_progress_bar(video: Path, work: Path, accent_hex: str, mode: str) -> Path:
+    """Overlay a thin progress bar that fills across the full video (retention cue)."""
+    total = max(get_media_duration(video), 0.5)
+    y = 120 if mode == "top" else H - 400
+    out = work / "concat_bar.mp4"
+    run_cmd([
+        "ffmpeg", "-y", "-i", str(video),
+        "-f", "lavfi", "-i", f"color=c=0x{accent_hex.lstrip('#')}:s={W}x8:r={FPS}:d={total:.3f}",
+        "-filter_complex", f"[0:v][1:v]overlay=x='-w+w*t/{total:.3f}':y={y}:shortest=1[v]",
+        "-map", "[v]", "-map", "0:a",
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p",
+        "-c:a", "copy",
         str(out),
     ])
+    return out
 
 
 # ---------------------------------------------------------------------------

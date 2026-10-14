@@ -18,6 +18,12 @@ Turn any blog post or article URL into a high-retention, YouTube-ready 9:16 vert
 
 ---
 
+## What's new in 2.0
+
+Angle-first workflow (brief -> format -> scored hooks -> retention-mapped script -> self-critique -> frame review) plus renderer upgrades: per-beat transitions and hard cuts (fixing a bug where 3+ beat videos got no transitions), emphasized caption words, per-beat palette override, adjustable beat tail, and an optional progress bar. See `CHANGELOG.md`.
+
+---
+
 ## Installation
 
 Install via the open skills CLI into your AI coding assistant (Cursor, Antigravity, Claude Code, Windsurf, etc.):
